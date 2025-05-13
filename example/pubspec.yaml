@@ -1,0 +1,23 @@
+name: hyperpay_flutter_example
+description: "Demonstrates how to use the hyperpay_flutter plugin."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+  flutter: ^3.24.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  hyperpay_flutter:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  very_good_analysis: ^6.0.0
+
+flutter:
+  uses-material-design: true 
