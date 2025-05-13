@@ -83,7 +83,7 @@ jobs:
           badge-path: coverage_badge.svg
       
       - name: Commit coverage badge
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update coverage badge"
           file_pattern: coverage_badge.svg
