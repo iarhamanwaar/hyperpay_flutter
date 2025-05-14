@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version type (major, minor, patch)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.2'
+          channel: 'stable'
+          cache: true
+      
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          dart pub global activate cider
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+      
+      - name: Bump version
+        run: |
+          # Get current version
+          CURRENT_VERSION=$(dart pub global run cider version)
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Bump version based on input
+          dart pub global run cider bump ${{ github.event.inputs.version_type }}
+          
+          # Get new version
+          NEW_VERSION=$(dart pub global run cider version)
+          echo "New version: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+      
+      - name: Update CHANGELOG.md
+        run: |
+          # Get commit messages since last tag
+          COMMITS=$(git log $(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD --pretty=format:"- %s")
+          
+          # Prepend new version section to CHANGELOG.md
+          echo -e "## ${{ env.NEW_VERSION }}\n\n$COMMITS\n\n$(cat CHANGELOG.md)" > CHANGELOG.md
+      
+      - name: Commit changes
+        run: |
+          git add pubspec.yaml CHANGELOG.md
+          git commit -m "chore: prepare release ${{ env.NEW_VERSION }}"
+          git push
+      
+      - name: Create and push tag
+        run: |
+          git tag v${{ env.NEW_VERSION }}
+          git push origin v${{ env.NEW_VERSION }}
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.NEW_VERSION }}
+          name: Release v${{ env.NEW_VERSION }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false 
